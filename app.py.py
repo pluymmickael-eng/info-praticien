@@ -14,6 +14,7 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     # On charge le fichier CSV propre que tu as mis sur GitHub
+    # IMPORTANT : Le fichier doit s'appeler exactement comme ça sur GitHub
     try:
         df = pd.read_csv("base_praticiens_clean.csv")
         # On remplit les vides par du texte vide pour éviter les erreurs d'affichage
@@ -28,7 +29,7 @@ df = load_data()
 # Si le fichier n'est pas trouvé, on arrête tout avec un message clair
 if df is None:
     st.error("⚠️ Erreur Critique : Le fichier 'base_praticiens_clean.csv' est introuvable.")
-    st.info("Assure-toi d'avoir bien glissé le fichier CSV dans ton dépôt GitHub avec ce nom exact.")
+    st.info("Vérifie sur GitHub que ton fichier s'appelle bien 'base_praticiens_clean.csv' (attention aux majuscules !).")
     st.stop()
 
 # --- 3. BARRE LATÉRALE (Filtres) ---
@@ -54,7 +55,8 @@ mot_cle = st.sidebar.text_input("Spécialité (ex: EMDR, TCC, Hypnose...)", "")
 df_filtre = df.copy()
 
 # A. Filtre par profession
-df_filtre = df_filtre[df_filtre['Profession'].isin(choix_metiers)]
+if choix_metiers:
+    df_filtre = df_filtre[df_filtre['Profession'].isin(choix_metiers)]
 
 # B. Filtre par Ville (si renseigné)
 if ville_search:
@@ -88,7 +90,7 @@ if nb_resultats > 100:
 else:
     df_display = df_filtre
 
-# Affichage carte par carte
+# Affichage des fiches
 for index, row in df_display.iterrows():
     with st.container():
         # En-tête de la fiche avec Nom et Profession
