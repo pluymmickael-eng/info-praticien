@@ -1,101 +1,112 @@
+import streamlit as st
 import pandas as pd
+import folium
+from streamlit_folium import st_folium
 
-# --- CONFIGURATION ---
-SOURCE_FILE = 'ps-libreacces-personne-activite.txt' 
-OUTPUT_FILE = 'base_praticiens_clean.csv'
+# --- 1. CONFIGURATION DE LA PAGE ---
+st.set_page_config(
+    page_title="Info-Praticien",
+    page_icon="🛡️",
+    layout="wide"
+)
 
-# Liste des mots-clés à garder (insensible à la casse)
-KEYWORDS = ['Psychologue', 'Psychiatre', 'Psychothérapeute', 'Psychiatrie']
+# --- 2. FONCTION DE CHARGEMENT DES DONNÉES ---
+@st.cache_data
+def load_data():
+    # On charge le fichier CSV propre que tu as mis sur GitHub
+    try:
+        df = pd.read_csv("base_praticiens_clean.csv")
+        # On remplit les vides par du texte vide pour éviter les erreurs d'affichage
+        df = df.fillna("")
+        return df
+    except FileNotFoundError:
+        return None
 
-# Si tu veux filtrer par département (ex: '59' ou '75'). Mets None pour toute la France.
-DEPARTEMENT_CIBLE = None 
+# Chargement
+df = load_data()
 
-# ---------------------
+# Si le fichier n'est pas trouvé, on arrête tout avec un message clair
+if df is None:
+    st.error("⚠️ Erreur Critique : Le fichier 'base_praticiens_clean.csv' est introuvable.")
+    st.info("Assure-toi d'avoir bien glissé le fichier CSV dans ton dépôt GitHub avec ce nom exact.")
+    st.stop()
 
-print("⏳ Chargement du fichier (patience...)...")
-# On utilise l'encodage 'utf-8' qui semble avoir fonctionné pour le chargement
-df = pd.read_csv(SOURCE_FILE, sep='|', encoding='utf-8', low_memory=False)
+# --- 3. BARRE LATÉRALE (Filtres) ---
+st.sidebar.header("🔍 Recherche")
 
-print(f"✅ Fichier chargé : {len(df)} lignes.")
+# Filtre : Ville
+ville_search = st.sidebar.text_input("Ville (ex: Lyon)", "")
 
-# --- 1. DÉTECTION INTELLIGENTE DES COLONNES ---
-print("🕵️‍♂️ Recherche automatique des bonnes colonnes...")
+# Filtre : Profession
+# On récupère la liste des métiers présents dans le fichier
+liste_metiers = sorted(df['Profession'].unique())
+choix_metiers = st.sidebar.multiselect(
+    "Profession",
+    options=liste_metiers,
+    default=liste_metiers
+)
 
-def trouver_colonne(mots_cles, df_cols):
-    """Cherche une colonne qui contient tous les mots clés donnés"""
-    for col in df_cols:
-        # On met tout en minuscule pour comparer
-        col_lower = col.lower()
-        # Si tous les mots clés sont dans le nom de la colonne
-        if all(mot in col_lower for mot in mots_cles):
-            return col
-    return None
+# Filtre : Mots-clés (la "Killer Feature")
+mot_cle = st.sidebar.text_input("Spécialité (ex: EMDR, TCC, Hypnose...)", "")
 
-# On cherche la colonne qui contient "libell" ET "profession" (peu importe les accents)
-col_profession = trouver_colonne(['libell', 'profession'], df.columns)
-# On cherche la colonne qui contient "libell" ET "savoir" (pour savoir-faire)
-col_savoir = trouver_colonne(['libell', 'savoir'], df.columns)
-# On cherche le code postal
-col_cp = trouver_colonne(['code', 'postal'], df.columns)
-# On cherche la ville
-col_ville = trouver_colonne(['libell', 'commune'], df.columns)
-# On cherche le nom
-col_nom = trouver_colonne(['nom', 'exercice'], df.columns)
+# --- 4. FILTRAGE DES DONNÉES ---
+# On commence avec tout le monde, puis on réduit
+df_filtre = df.copy()
 
-# Vérification
-if not col_profession:
-    print("❌ ERREUR CRITIQUE : Impossible de trouver la colonne Profession.")
-    print("Voici les colonnes disponibles :", df.columns.tolist())
-    exit()
+# A. Filtre par profession
+df_filtre = df_filtre[df_filtre['Profession'].isin(choix_metiers)]
 
-print(f"   -> Colonne Profession identifiée : '{col_profession}'")
-print(f"   -> Colonne Savoir-Faire identifiée : '{col_savoir}'")
+# B. Filtre par Ville (si renseigné)
+if ville_search:
+    df_filtre = df_filtre[df_filtre['Ville'].str.contains(ville_search, case=False, na=False)]
 
-# --- 2. FILTRAGE ---
-print("🔍 Filtrage des praticiens (C'est là que la magie opère)...")
+# C. Filtre par Mot-clé (si renseigné)
+if mot_cle:
+    # On cherche dans la colonne Profession OU SavoirFaire
+    mask = (
+        df_filtre['Profession'].str.contains(mot_cle, case=False, na=False) |
+        df_filtre['SavoirFaire'].str.contains(mot_cle, case=False, na=False)
+    )
+    df_filtre = df_filtre[mask]
 
-# On remplit les vides pour éviter les bugs
-df[col_profession] = df[col_profession].fillna('')
-df[col_savoir] = df[col_savoir].fillna('')
+# --- 5. AFFICHAGE DES RÉSULTATS ---
+st.title("🛡️ Info-Praticien")
+st.markdown("Annuaire des professionnels de santé vérifiés (RPPS/ADELI).")
 
-def is_target(row):
-    # On regarde dans la profession ET le savoir-faire
-    prof = str(row[col_profession]).lower()
-    savoir = str(row[col_savoir]).lower()
-    
-    # On vérifie si un des mots clés est présent
-    for k in KEYWORDS:
-        k_lower = k.lower()
-        if k_lower in prof or k_lower in savoir:
-            return True
-    return False
+# Compteur de résultats
+nb_resultats = len(df_filtre)
+st.metric(label="Praticiens trouvés", value=nb_resultats)
 
-# Application du filtre
-mask = df.apply(is_target, axis=1)
-df_clean = df[mask].copy()
+st.divider()
 
-print(f"📉 Praticiens trouvés (avant filtre géo) : {len(df_clean)}")
+# Si on a trop de résultats, on prévient l'utilisateur
+if nb_resultats > 100:
+    st.warning("⚠️ Trop de résultats. Affinez votre recherche (Ville ou Spécialité) pour voir la liste.")
+    # On affiche quand même les 10 premiers pour l'exemple
+    st.write("Voici un aperçu des 10 premiers :")
+    df_display = df_filtre.head(10)
+else:
+    df_display = df_filtre
 
-# --- 3. NETTOYAGE ADRESSE ---
-if col_cp:
-    # On vire ceux sans code postal
-    df_clean = df_clean.dropna(subset=[col_cp])
-    # On nettoie le code postal (enlève les '.0' si présents)
-    df_clean[col_cp] = df_clean[col_cp].astype(str).str.replace(r'\.0$', '', regex=True)
+# Affichage carte par carte
+for index, row in df_display.iterrows():
+    with st.container():
+        # En-tête de la fiche avec Nom et Profession
+        c1, c2 = st.columns([3, 1])
+        c1.subheader(f"👨‍⚕️ {row['Nom']} {row['Prenom']}")
+        c1.caption(f"🎓 {row['Profession']}")
+        
+        # Adresse et Contact
+        st.write(f"📍 **{row['CodePostal']} {row['Ville']}**")
+        st.write(f"🏠 {row['AdresseComplete']}")
+        
+        if row['SavoirFaire']:
+            st.info(f"💡 **Expertise :** {row['SavoirFaire']}")
+        
+        if row['Email']:
+            st.write(f"📧 {row['Email']}")
+            
+        st.markdown("---")
 
-    if DEPARTEMENT_CIBLE:
-        print(f"📍 Restriction au département : {DEPARTEMENT_CIBLE}")
-        df_clean = df_clean[df_clean[col_cp].str.startswith(DEPARTEMENT_CIBLE)]
-
-# --- 4. EXPORT ---
-# On sélectionne les colonnes utiles à sauvegarder
-cols_a_garder = [col_nom, col_profession, col_savoir, col_cp, col_ville]
-# On ajoute l'email si on le trouve
-col_email = trouver_colonne(['mail'], df.columns)
-if col_email:
-    cols_a_garder.append(col_email)
-
-print("💾 Sauvegarde...")
-df_clean[cols_a_garder].to_csv(OUTPUT_FILE, index=False, sep=',')
-
-print(f"🚀 TERMINE ! Tu as {len(df_clean)} pros dans le fichier '{OUTPUT_FILE}'.")
+# Pied de page
+st.caption("Données issues de l'Annuaire Santé National - Mise à jour 2026")
