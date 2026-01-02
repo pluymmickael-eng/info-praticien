@@ -9,114 +9,72 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. LE DESIGN "CARRÉ & MÉDICAL" (CSS) ---
+# --- 2. CSS (DESIGN MÉDICAL & PROPRE) ---
 st.markdown("""
 <style>
-    /* Reset et polices */
+    /* Reset général */
     .stApp {
-        background-color: #F4F7FA; /* Fond gris très clair, plus doux que le blanc pur */
+        background-color: #F8F9FA;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* Nettoyage interface */
+    /* Cacher les éléments Streamlit inutiles */
     #MainMenu, footer, header {visibility: hidden;}
-    .block-container {padding: 0 !important; max-width: 100%;} /* On enlève les paddings pour gérer nous-mêmes */
+    .block-container {padding-top: 0 !important; max-width: 100%;}
 
-    /* --- LE HEADER BLEU PRO --- */
+    /* HEADER BLEU INTEGRAL */
     .hero-header {
-        background: linear-gradient(135deg, #004e92 0%, #000428 100%); /* Dégradé bleu nuit médical */
-        padding: 40px 20px 60px 20px;
+        background-color: #000091; /* Bleu Institutionnel */
+        padding: 40px 20px 40px 20px;
         color: white;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .hero-title {
-        font-size: 32px;
-        font-weight: 800;
-        margin: 0;
-        letter-spacing: -0.5px;
-    }
-    .hero-subtitle {
-        font-size: 16px;
-        opacity: 0.9;
-        margin-top: 10px;
-        font-weight: 400;
-    }
-    .official-badge {
-        background: rgba(255,255,255,0.1);
-        color: white;
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: inline-block;
-        margin-bottom: 15px;
-        border: 1px solid rgba(255,255,255,0.3);
-    }
-
-    /* --- LA BARRE DE RECHERCHE ERGONOMIQUE --- */
-    /* On la fait "flotter" sur la limite du bleu et du gris */
-    .search-container-floating {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        margin: -35px auto 30px auto; /* Marge négative pour remonter sur le bleu */
-        max-width: 700px; /* Largeur max pour rester ergonomique */
-        width: 90%;
-    }
-    /* Style du champ input */
-    .stTextInput>div>div>input {
-        border: none;
-        padding: 15px;
-        font-size: 18px;
-        border-bottom: 2px solid #eee;
-        border-radius: 0;
-        background: transparent;
-    }
-    .stTextInput>div>div>input:focus {
-        box-shadow: none;
-        border-bottom-color: #004e92;
-    }
-
-    /* --- CARTES RESULTATS --- */
-    .results-container {
-        max-width: 700px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-    .pro-card {
-        background-color: white;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 15px;
-        border: 1px solid #eef2f6;
-        border-left: 4px solid #004e92;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    .verified-badge {
-        background-color: #E8F5E9; color: #2E7D32; 
-        padding: 3px 8px; border-radius: 4px; 
-        font-size: 11px; font-weight: 700; 
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
+        margin-bottom: 20px;
     }
     
-    /* Email link style */
-    .email-link {
-        color: #004e92; text-decoration: none; font-weight: 500;
-        display: inline-flex; align-items: center;
-        margin-top: 10px;
+    /* INPUT DE RECHERCHE DANS LE BLEU */
+    .stTextInput > div > div > input {
+        border: none;
+        border-radius: 8px;
+        padding: 15px;
+        font-size: 16px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    .email-link:hover { text-decoration: underline; }
+    
+    /* CARTES RÉSULTATS */
+    .pro-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 12px;
+        border: 1px solid #e0e0e0;
+        border-left: 5px solid #000091; /* Marqueur bleu à gauche */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    h1 { color: white !important; font-size: 28px; font-weight: 700; margin-bottom: 10px;}
+    p { font-size: 14px; opacity: 0.9;}
+    
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. CHARGEMENT DONNÉES ---
+# --- 3. INTELLIGENCE ARTIFICIELLE (Détection des colonnes) ---
+def trouver_colonne(df, mots_cles):
+    """Cherche une colonne qui contient un des mots clés (insensible à la casse)"""
+    for col in df.columns:
+        for mot in mots_cles:
+            if mot.lower() in col.lower():
+                return col
+    return None # Si on trouve rien
+
+# --- 4. CHARGEMENT ROBUSTE ---
 @st.cache_data
 def load_data():
     try:
+        # On essaie de lire avec virgule
         df = pd.read_csv("base_praticiens_clean.csv", sep=',', dtype=str)
+        if len(df.columns) < 2: # Si ça a foiré (tout dans une colonne), on tente le pipe |
+             df = pd.read_csv("base_praticiens_clean.csv", sep='|', dtype=str)
+        
         df = df.fillna("")
         return df
     except:
@@ -124,88 +82,83 @@ def load_data():
 
 df = load_data()
 
-# --- 4. HEADER "HERO" (La partie Bleu Pro) ---
+# --- 5. HEADER (L'EN-TÊTE BLEU) ---
 st.markdown("""
 <div class="hero-header">
-    <div class="official-badge">🇫🇷 Données RPPS Certifiées</div>
-    <h1 class="hero-title">Portail National Info-Praticien</h1>
-    <p class="hero-subtitle">Vérifiez les diplômes des professionnels de santé mentale.<br>Luttez contre l'exercice illégal.</p>
+    <div style="font-size: 40px; margin-bottom: 10px;">🇫🇷</div>
+    <h1>Portail Info-Praticien</h1>
+    <p>Annuaire de vérification des diplômes de santé.</p>
 </div>
 """, unsafe_allow_html=True)
 
-# --- 5. BARRE DE RECHERCHE FLOTTANTE (Ergonomique) ---
-# On utilise un conteneur spécial pour la faire chevaucher le header
-st.markdown('<div class="search-container-floating">', unsafe_allow_html=True)
-recherche = st.text_input("Zone de recherche", placeholder="🔍 Tapez un nom, une ville ou une spécialité...", label_visibility="collapsed")
-st.markdown('</div>', unsafe_allow_html=True)
-
-
-# --- 6. RÉSULTATS ---
-# On met tout dans un conteneur centré propre
-st.markdown('<div class="results-container">', unsafe_allow_html=True)
-
+# --- 6. GESTION DES ERREURS (Anti-Crash) ---
 if df is None:
-    st.error("⚠️ Service momentanément indisponible (Maintenance Base de Données).")
+    st.error("⚠️ Maintenance des données en cours.")
     st.stop()
 
-df_final = df.copy()
+# On identifie les vrais noms des colonnes dans TON fichier
+col_nom = trouver_colonne(df, ['nom', 'exercice', 'last name'])
+col_prenom = trouver_colonne(df, ['prenom', 'prénom', 'first name'])
+col_prof = trouver_colonne(df, ['profession', 'metier', 'job'])
+col_ville = trouver_colonne(df, ['ville', 'commune', 'bureau'])
+col_cp = trouver_colonne(df, ['code', 'postal', 'cp'])
+col_email = trouver_colonne(df, ['email', 'mail', 'courriel'])
 
+# Si on ne trouve pas la colonne NOM, on prend la première colonne par défaut pour éviter le crash
+if not col_nom:
+    col_nom = df.columns[0] 
+
+# --- 7. BARRE DE RECHERCHE (Simple et centrée) ---
+col_search, _ = st.columns([1, 0.01]) # Astuce pour centrer
+with col_search:
+    recherche = st.text_input("Recherche", placeholder="🔍 Nom, Ville ou Profession...", label_visibility="collapsed")
+
+# --- 8. RÉSULTATS ---
 if recherche:
     terme = recherche.lower()
-    mask = (
-        df_final['Nom'].str.lower().str.contains(terme) |
-        df_final['Ville'].str.lower().str.contains(terme) |
-        df_final['Profession'].str.lower().str.contains(terme)
-    )
-    df_final = df_final[mask]
     
-    nb = len(df_final)
-    if nb > 0:
-        # Petit message de succès discret
-        st.markdown(f"<div style='text-align: center; color: #666; margin-bottom: 20px;'>✅ <b>{nb}</b> professionnels trouvés dans le registre officiel.</div>", unsafe_allow_html=True)
+    # On construit le filtre dynamiquement (pour éviter le KeyError)
+    mask = df[col_nom].astype(str).str.lower().str.contains(terme, na=False)
+    
+    if col_ville:
+        mask = mask | df[col_ville].astype(str).str.lower().str.contains(terme, na=False)
+    if col_prof:
+        mask = mask | df[col_prof].astype(str).str.lower().str.contains(terme, na=False)
         
-        # Boucle d'affichage des cartes
-        for index, row in df_final.head(20).iterrows():
-            # Gestion Email
-            email_html = ""
-            if 'Email' in row and row['Email']: 
-                email_html = f"""<a href="mailto:{row['Email']}" class="email-link">✉️ Contacter ({row['Email']})</a>"""
-            
-            # La Carte HTML propre
-            st.markdown(f"""
-            <div class="pro-card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                            <h3 style="font-size: 18px; margin: 0; color: #1a1a1a;">{row['Nom']} {row['Prenom']}</h3>
-                            <span class="verified-badge">Vérifié État</span>
-                        </div>
-                        <div style="color: #004e92; font-weight: 600; font-size: 15px;">{row['Profession']}</div>
-                        
-                        <div style="color: #555; font-size: 14px; margin-top: 12px; line-height: 1.4;">
-                            📍 {row['AdresseComplete']}<br>
-                            <b>{row['CodePostal']} {row['Ville']}</b>
-                        </div>
-                        {email_html}
-                    </div>
-                </div>
+    df_final = df[mask]
+    
+    st.write(f"**{len(df_final)}** résultat(s)")
+    
+    for index, row in df_final.head(20).iterrows():
+        # Récupération sécurisée des données
+        nom = row[col_nom]
+        prenom = row[col_prenom] if col_prenom else ""
+        profession = row[col_prof] if col_prof else "Profession de santé"
+        ville = f"{row[col_cp]} {row[col_ville]}" if (col_cp and col_ville) else ""
+        email = row[col_email] if (col_email and row[col_email]) else None
+        
+        # HTML Email
+        btn_email = ""
+        if email:
+            btn_email = f'<a href="mailto:{email}" style="color:#000091; font-weight:bold; text-decoration:none;">✉️ Contacter</a>'
+
+        st.markdown(f"""
+        <div class="pro-card">
+            <div style="font-size: 18px; font-weight: bold; color: #333;">
+                👨‍⚕️ {nom} {prenom}
             </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.warning("🤔 Aucun résultat exact. Essayez une recherche plus large.")
+            <div style="color: #000091; font-weight: 600; margin-top: 4px;">
+                {profession}
+            </div>
+            <div style="color: #666; font-size: 14px; margin-top: 8px;">
+                📍 {ville}
+            </div>
+            <div style="margin-top: 10px;">
+                {btn_email}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 else:
-    # ACCUEIL VIDE ÉPURÉ
-    st.markdown("""
-    <div style="text-align: center; color: #666; padding: 40px;">
-        <h3 style="color: #333;">Pourquoi ce portail ?</h3>
-        <p>Face à la multiplication des pratiques non réglementées, ce service d'utilité publique vous permet de distinguer les professionnels diplômés d'État.</p>
-        <div style="display: flex; justify-content: center; gap: 30px; margin-top: 30px;">
-            <div>🛡️<br><b>100% Officiel</b><br><small>Source RPPS</small></div>
-            <div>🔬<br><b>Scientifique</b><br><small>Zéro pseudo-science</small></div>
-            <div>🤝<br><b>Gratuit</b><br><small>Service public</small></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True) # Fin du results-container
+    # Accueil Vide
+    st.info("👋 Tapez le nom d'un praticien ou une ville pour vérifier un diplôme.")
