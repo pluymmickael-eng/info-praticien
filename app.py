@@ -3,85 +3,112 @@ import pandas as pd
 
 # --- 1. CONFIGURATION ---
 st.set_page_config(
-    page_title="Info-Praticien | Portail Officiel",
+    page_title="Info-Praticien | Portail National",
     page_icon="🇫🇷",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. LE DESIGN "RÉPUBLIQUE" (CSS) ---
+# --- 2. LE DESIGN "CARRÉ & MÉDICAL" (CSS) ---
 st.markdown("""
 <style>
-    /* 1. Fond Blanc Doctolib */
+    /* Reset et polices */
     .stApp {
-        background-color: #FFFFFF;
+        background-color: #F4F7FA; /* Fond gris très clair, plus doux que le blanc pur */
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
-
-    /* 2. Cacher les éléments Streamlit moches */
+    
+    /* Nettoyage interface */
     #MainMenu, footer, header {visibility: hidden;}
-    .block-container {padding-top: 1rem !important;}
+    .block-container {padding: 0 !important; max-width: 100%;} /* On enlève les paddings pour gérer nous-mêmes */
 
-    /* 3. L'Estampille "Institutionnelle" (Le fameux Bleu Blanc Rouge) */
-    .mariannes-flag {
-        display: inline-block;
-        border: 1px solid #e5e5e5;
-        background: #fff;
-        padding: 10px 20px;
-        font-family: 'Marianne', sans-serif;
-        font-weight: bold;
+    /* --- LE HEADER BLEU PRO --- */
+    .hero-header {
+        background: linear-gradient(135deg, #004e92 0%, #000428 100%); /* Dégradé bleu nuit médical */
+        padding: 40px 20px 60px 20px;
+        color: white;
         text-align: center;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .flag-stripe {
-        display: block;
-        width: 40px;
-        height: 4px;
-        margin: 0 auto 5px auto;
-        background: linear-gradient(to right, #000091 33%, #fff 33%, #fff 66%, #E1000F 66%);
+    .hero-title {
+        font-size: 32px;
+        font-weight: 800;
+        margin: 0;
+        letter-spacing: -0.5px;
     }
-    .flag-text {
-        color: #161616;
+    .hero-subtitle {
+        font-size: 16px;
+        opacity: 0.9;
+        margin-top: 10px;
+        font-weight: 400;
+    }
+    .official-badge {
+        background: rgba(255,255,255,0.1);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
         font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        line-height: 1.2;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 15px;
+        border: 1px solid rgba(255,255,255,0.3);
     }
 
-    /* 4. Barre de Recherche "Doctolib Style" */
+    /* --- LA BARRE DE RECHERCHE ERGONOMIQUE --- */
+    /* On la fait "flotter" sur la limite du bleu et du gris */
+    .search-container-floating {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        margin: -35px auto 30px auto; /* Marge négative pour remonter sur le bleu */
+        max-width: 700px; /* Largeur max pour rester ergonomique */
+        width: 90%;
+    }
+    /* Style du champ input */
     .stTextInput>div>div>input {
-        border-radius: 50px;
-        border: 1px solid #dfe1e5;
-        padding: 25px 20px;
-        font-size: 16px;
-        box-shadow: 0 1px 6px rgba(32, 33, 36, 0.1);
-        transition: all 0.3s;
+        border: none;
+        padding: 15px;
+        font-size: 18px;
+        border-bottom: 2px solid #eee;
+        border-radius: 0;
+        background: transparent;
     }
     .stTextInput>div>div>input:focus {
-        box-shadow: 0 1px 6px rgba(32, 33, 36, 0.2);
-        border-color: #000091;
+        box-shadow: none;
+        border-bottom-color: #004e92;
     }
 
-    /* 5. Cartes des Praticiens */
+    /* --- CARTES RESULTATS --- */
+    .results-container {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 20px;
+    }
     .pro-card {
-        border: 1px solid #eef2f6;
+        background-color: white;
         border-radius: 8px;
         padding: 20px;
         margin-bottom: 15px;
-        background-color: white;
-        transition: transform 0.2s;
-        border-left: 4px solid #000091; /* La petite barre bleue pro */
+        border: 1px solid #eef2f6;
+        border-left: 4px solid #004e92;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
-    .pro-card:hover {
-        box-shadow: 0 10px 15px rgba(0,0,0,0.05);
-        transform: translateY(-2px);
+    .verified-badge {
+        background-color: #E8F5E9; color: #2E7D32; 
+        padding: 3px 8px; border-radius: 4px; 
+        font-size: 11px; font-weight: 700; 
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
     }
     
-    /* Titres */
-    h1 { color: #161616; font-weight: 800; letter-spacing: -0.5px;}
-    h3 { color: #000091; margin-bottom: 0;}
-    
+    /* Email link style */
+    .email-link {
+        color: #004e92; text-decoration: none; font-weight: 500;
+        display: inline-flex; align-items: center;
+        margin-top: 10px;
+    }
+    .email-link:hover { text-decoration: underline; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -89,7 +116,6 @@ st.markdown("""
 @st.cache_data
 def load_data():
     try:
-        # Lecture robuste
         df = pd.read_csv("base_praticiens_clean.csv", sep=',', dtype=str)
         df = df.fillna("")
         return df
@@ -98,41 +124,29 @@ def load_data():
 
 df = load_data()
 
-# --- 4. EN-TÊTE INSTITUTIONNEL ---
-# On crée 3 colonnes pour centrer le bloc "Marianne"
-c1, c2, c3 = st.columns([1,2,1])
-with c2:
-    st.markdown("""
-        <div style="text-align: center;">
-            <div class="mariannes-flag">
-                <div class="flag-stripe"></div>
-                <div class="flag-text">République<br>Française</div>
-                <div style="font-size: 9px; color: #666; margin-top:5px;">Base de données officielle RPPS</div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+# --- 4. HEADER "HERO" (La partie Bleu Pro) ---
+st.markdown("""
+<div class="hero-header">
+    <div class="official-badge">🇫🇷 Données RPPS Certifiées</div>
+    <h1 class="hero-title">Portail National Info-Praticien</h1>
+    <p class="hero-subtitle">Vérifiez les diplômes des professionnels de santé mentale.<br>Luttez contre l'exercice illégal.</p>
+</div>
+""", unsafe_allow_html=True)
 
-st.title("Info-Praticien.fr")
-st.markdown("<p style='text-align: center; color: #555; font-size: 18px;'>Le portail de vérification des professionnels de santé.</p>", unsafe_allow_html=True)
+# --- 5. BARRE DE RECHERCHE FLOTTANTE (Ergonomique) ---
+# On utilise un conteneur spécial pour la faire chevaucher le header
+st.markdown('<div class="search-container-floating">', unsafe_allow_html=True)
+recherche = st.text_input("Zone de recherche", placeholder="🔍 Tapez un nom, une ville ou une spécialité...", label_visibility="collapsed")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# Image "Scientifique" subtile en bannière (Optionnelle)
-# J'utilise une image stock d'ADN très propre et bleue
-st.image("https://img.freepik.com/free-photo/medical-banner-with-structure-dna_1098-18968.jpg?w=1380&t=st=1704200000~exp=1704200600~hmac=fake", use_container_width=True)
-
-if df is None:
-    st.error("⚠️ Service momentanément indisponible (Base de données en maintenance).")
-    st.stop()
-
-# --- 5. RECHERCHE ---
-st.write("") # Espace
-st.write("") 
-
-col_search, col_btn = st.columns([4, 1])
-with col_search:
-    recherche = st.text_input("Recherche", placeholder="🔍 Nom, Ville, Spécialité (ex: Psychologue Paris)", label_visibility="collapsed")
 
 # --- 6. RÉSULTATS ---
-st.write("---")
+# On met tout dans un conteneur centré propre
+st.markdown('<div class="results-container">', unsafe_allow_html=True)
+
+if df is None:
+    st.error("⚠️ Service momentanément indisponible (Maintenance Base de Données).")
+    st.stop()
 
 df_final = df.copy()
 
@@ -147,33 +161,51 @@ if recherche:
     
     nb = len(df_final)
     if nb > 0:
-        st.success(f"✅ **{nb}** professionnel(s) recensé(s) dans l'annuaire officiel.")
+        # Petit message de succès discret
+        st.markdown(f"<div style='text-align: center; color: #666; margin-bottom: 20px;'>✅ <b>{nb}</b> professionnels trouvés dans le registre officiel.</div>", unsafe_allow_html=True)
         
+        # Boucle d'affichage des cartes
         for index, row in df_final.head(20).iterrows():
-            # On utilise du HTML pur pour faire de belles cartes
+            # Gestion Email
+            email_html = ""
+            if 'Email' in row and row['Email']: 
+                email_html = f"""<a href="mailto:{row['Email']}" class="email-link">✉️ Contacter ({row['Email']})</a>"""
+            
+            # La Carte HTML propre
             st.markdown(f"""
             <div class="pro-card">
-                <div style="display: flex; align-items: center;">
-                    <div style="font-size: 30px; margin-right: 15px;">👨‍⚕️</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div>
-                        <h3 style="font-size: 18px; margin: 0;">{row['Nom']} {row['Prenom']}</h3>
-                        <div style="color: #444; font-weight: bold;">{row['Profession']}</div>
-                        <div style="color: #666; font-size: 14px;">📍 {row['AdresseComplete']} - {row['Ville']}</div>
-                        <div style="background-color: #E8F5E9; color: #2E7D32; display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 5px;">✅ Diplôme Vérifié État</div>
+                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                            <h3 style="font-size: 18px; margin: 0; color: #1a1a1a;">{row['Nom']} {row['Prenom']}</h3>
+                            <span class="verified-badge">Vérifié État</span>
+                        </div>
+                        <div style="color: #004e92; font-weight: 600; font-size: 15px;">{row['Profession']}</div>
+                        
+                        <div style="color: #555; font-size: 14px; margin-top: 12px; line-height: 1.4;">
+                            📍 {row['AdresseComplete']}<br>
+                            <b>{row['CodePostal']} {row['Ville']}</b>
+                        </div>
+                        {email_html}
                     </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
     else:
-        st.warning("Aucun résultat. Ce praticien n'est peut-être pas référencé ou vérifiez l'orthographe.")
+        st.warning("🤔 Aucun résultat exact. Essayez une recherche plus large.")
 
 else:
-    # ACCUEIL VIDE (RASSURANT)
-    st.info("👋 **Bienvenue sur le portail de transparence.**")
+    # ACCUEIL VIDE ÉPURÉ
     st.markdown("""
-    Ici, vous ne trouverez que des professionnels **inscrits à l'Ordre** et disposant d'un **numéro ADELI/RPPS valide**.
-    
-    * 🛡️ **Fiable :** Données synchronisées avec l'Annuaire Santé National.
-    * 🧪 **Scientifique :** Aucune pratique non reconnue (pas de pseudo-sciences).
-    * 🇫🇷 **Souverain :** Hébergé en France, conforme RGPD.
-    """)
+    <div style="text-align: center; color: #666; padding: 40px;">
+        <h3 style="color: #333;">Pourquoi ce portail ?</h3>
+        <p>Face à la multiplication des pratiques non réglementées, ce service d'utilité publique vous permet de distinguer les professionnels diplômés d'État.</p>
+        <div style="display: flex; justify-content: center; gap: 30px; margin-top: 30px;">
+            <div>🛡️<br><b>100% Officiel</b><br><small>Source RPPS</small></div>
+            <div>🔬<br><b>Scientifique</b><br><small>Zéro pseudo-science</small></div>
+            <div>🤝<br><b>Gratuit</b><br><small>Service public</small></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True) # Fin du results-container
